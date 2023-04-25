@@ -346,14 +346,48 @@ glm::vec3 RayTrace(const Ray& ray, const Scene& scene, glm::vec3& cameraPos, int
     // if there was an intersection...
     if (intersect.object != nullptr)
     {
-        // ... naively use the diffuse material color of that object as our pixel's final color
-        color = intersect.object->material.diffuse;
+        Material material = intersect.object->material;
+        glm::vec3 ambient = material.ambient;
+        glm::vec3 diffuse = material.diffuse;
+        glm::vec3 specular = material.specular;
+        float shininess = material.shininess;
+        glm::vec3 normal = intersect.intersectionNormal;
+        glm::vec3 intersectionPoint = intersect.intersectionPoint;
+        glm::vec3 viewDir = glm::normalize(cameraPos - intersectionPoint);
 
-        // TODO: Replace the line above with code that computes proper lighting, shadowing, and reflections!
+        // calculate the color of each light
+        for (Light light : scene.lights)
+        {
+            glm::vec3 lightDir;
+            float attenuation = 1.0f;
+
+            // calculate the light direction and attenuation based on whether the light is a point or directional light
+            if (light.position.w == 1.0f)
+            {
+                lightDir = glm::normalize(glm::vec3(light.position) - intersectionPoint);
+                float distance = glm::distance(intersectionPoint, glm::vec3(light.position));
+                attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+            }
+            else
+            {
+                lightDir = glm::normalize(-glm::vec3(light.position));
+            }
+
+            // calculate the ambient, diffuse, and specular components for this light
+            glm::vec3 ambientComp = ambient * light.ambient;
+            glm::vec3 diffuseComp = diffuse * light.diffuse * glm::max(glm::dot(normal, lightDir), 0.0f);
+            glm::vec3 reflectDir = glm::normalize(glm::reflect(-lightDir, normal));
+            glm::vec3 specularComp = specular * light.specular * glm::pow(glm::max(glm::dot(viewDir, reflectDir), 0.0f), shininess);
+
+            // add this light's contribution to the color
+            color += attenuation * (ambientComp + diffuseComp + specularComp);
+        }
     }
 
     return color;
 }
+
+
 
 /**
  * @brief       Read a .test file into our Scene structures
