@@ -373,20 +373,43 @@ glm::vec3 RayTrace(const Ray& ray, const Scene& scene, glm::vec3& cameraPos, int
                 lightDir = glm::normalize(-glm::vec3(light.position));
             }
 
+
+            //check if the intersection point is in shadow
+            glm::vec3 shadowRayOrigin = intersectionPoint + 0.001f * lightDir;
+            glm::vec3 shadowRayDirection = lightDir;
+            Ray shadowRay = { shadowRayOrigin, shadowRayDirection };
+            
+            IntersectionInfo shadowIntersect = RayCast(shadowRay, scene);
+            bool inShadow = (shadowIntersect.t <= glm::distance(intersectionPoint, glm::vec3(light.position)));
+
             // calculate the ambient, diffuse, and specular components for this light
             glm::vec3 ambientComp = ambient * light.ambient;
             glm::vec3 diffuseComp = diffuse * light.diffuse * glm::max(glm::dot(normal, lightDir), 0.0f);
             glm::vec3 reflectDir = glm::normalize(glm::reflect(-lightDir, normal));
             glm::vec3 specularComp = specular * light.specular * glm::pow(glm::max(glm::dot(viewDir, reflectDir), 0.0f), shininess);
 
-            // add this light's contribution to the color
-            color += attenuation * (ambientComp + diffuseComp + specularComp);
+            if (!inShadow)
+            {
+                color += attenuation * (ambientComp + diffuseComp + specularComp);
+            }
         }
+
+        // reflection
+        if (depth > 0 && shininess > 0.0f)
+        {
+            float Kr = shininess / 128.0f;
+            glm::vec3 reflectDir = glm::normalize(glm::reflect(ray.direction, normal));
+            glm::vec3 reflectOrigin = intersectionPoint + normal * 0.01f;
+            Ray reflectRay = { reflectOrigin, reflectDir };
+            glm::vec3 reflectionColor = RayTrace(reflectRay, scene, cameraPos, depth - 1);
+            color += Kr * reflectionColor;
+        }
+
+        
     }
 
     return color;
 }
-
 
 
 /**
