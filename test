@@ -1,0 +1,20 @@
+#!/bin/bash
+###############################################################################
+## This simple shell script helps you to quickly compile your ray-tracing
+## program on macOS.
+##
+## Happy hacking! - eric
+###############################################################################
+
+# display a message if no filename was given
+if [ -z "$1" ]; then
+    echo "Usage:    ./test {filename}"
+    echo "Example:  ./test scene0.test"
+    exit
+fi
+
+# show the user what the compile command will look like
+echo clang++ ./main.cpp -std=c++17 -Wall -Iinclude -o ./main.out
+
+# actually compile the program && run it if compilation succeeds
+clang++ ./main.cpp -std=c++17 -Wall -Iinclude -o ./main.out && ./main.out ./$1 && open ./test.png
