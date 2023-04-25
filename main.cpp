@@ -130,7 +130,7 @@ struct Triangle : public SceneObject
         // as shown in the slides, using code adapted from the original paper at
         // https://www.graphics.cornell.edu/pubs/1997/MT97.pdf.
 
-        // calculate two triangle edges and the determinant
+            // calculate two triangle edges and the determinant
         float t = -INFINITY;
         glm::vec3 E1 = B - A;
         glm::vec3 E2 = C - A;
@@ -155,13 +155,15 @@ struct Triangle : public SceneObject
         if (v < 0.0f || u + v > 1.0f)
             return t;  // return -INFINITY, i.e., no intersection
 
-        // Finally, compute for the correct value of t (as discussed in the slides). Then, if t is
-        // non-negative, calculate the value of outIntersectionPoint and outIntersectionNormal
-        // before returning t.
-        //
-        // TODO: Implement this!
+        // compute the distance t from the origin of the ray to the intersection point
+        t = glm::dot(Q, E2) / det;
 
-	    return t;
+        // calculate the intersection point and normal vector
+        outIntersectionPoint = incomingRay.origin + t * incomingRay.direction;
+        outIntersectionNormal = glm::normalize(glm::cross(E1, E2));
+
+        return t;
+
     }
 };
 
