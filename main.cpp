@@ -346,14 +346,43 @@ glm::vec3 RayTrace(const Ray& ray, const Scene& scene, glm::vec3& cameraPos, int
     // if there was an intersection...
     if (intersect.object != nullptr)
     {
-        // ... naively use the diffuse material color of that object as our pixel's final color
-        color = intersect.object->material.diffuse;
+        // calculate ambient light
+        glm::vec3 ambientColor = intersect.object->material.ambient;
+        color += ambientColor;
 
-        // TODO: Replace the line above with code that computes proper lighting, shadowing, and reflections!
+        // calculate diffuse and specular light for each light source
+        for (const Light& light : scene.lights)
+        {
+            // calculate the lighting direction (l)
+            glm::vec3 lightDir = glm::vec3(light.position) - intersect.intersectionPoint;
+            if (light.position.w == 1.0f)
+            {
+                lightDir = glm::normalize(lightDir);
+            }
+            else
+            {
+                lightDir = glm::normalize(-lightDir);
+            }
+
+            // calculate the diffuse component
+            glm::vec3 diffuseColor = intersect.object->material.diffuse;
+            float diffuseFactor = glm::max(glm::dot(lightDir, intersect.intersectionNormal), 0.0f);
+            diffuseColor *= diffuseFactor;
+            color += diffuseColor;
+
+            // calculate the specular component
+            glm::vec3 specularColor = intersect.object->material.specular;
+            glm::vec3 viewDir = glm::normalize(cameraPos - intersect.intersectionPoint);
+            glm::vec3 reflectDir = glm::reflect(-lightDir, intersect.intersectionNormal);
+            float specularFactor = glm::pow(glm::max(glm::dot(viewDir, reflectDir), 0.0f), intersect.object->material.shininess);
+            specularColor *= specularFactor;
+            color += specularColor;
+        }
     }
 
     return color;
 }
+
 
 /**
  * @brief       Read a .test file into our Scene structures
