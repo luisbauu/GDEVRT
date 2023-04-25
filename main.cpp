@@ -80,13 +80,28 @@ struct Sphere : public SceneObject
                             glm::vec3& outIntersectionPoint,
                             glm::vec3& outIntersectionNormal)
     {
-        float t = -INFINITY;
+         float t = -INFINITY;
+        
+        glm::vec3 l = center - incomingRay.origin;
+        float tca = glm::dot(l, incomingRay.direction);
+        if (tca < 0) return t;
 
-        // Compute for the value of t first (as discussed in the slides). Then, if t is
-        // non-negative, calculate the value of outIntersectionPoint and outIntersectionNormal
-        // before returning t.
-        //
-        // TODO: Implement this!
+        float d2 = glm::dot(l, l) - tca * tca;
+        if (d2 > radius * radius) return t;
+
+        float thc = sqrt(radius * radius - d2);
+        float t0 = tca - thc;
+        float t1 = tca + thc;
+
+        if (t0 > t1) std::swap(t0, t1);
+        if (t0 < 0) {
+            t0 = t1;
+            if (t0 < 0) return t;
+        }
+
+        outIntersectionPoint = incomingRay.origin + t0 * incomingRay.direction;
+        outIntersectionNormal = glm::normalize(outIntersectionPoint - center);
+        t = t0;
 
         return t;
     }
